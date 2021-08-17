@@ -1,0 +1,152 @@
+<div class="flex flex-col py-4 px-8 space-y-4">
+    <div class="text-4xl">Algoritmos Genéticos</div>
+    <div class="flex flex-row items-center space-x-2">
+        <div class="flex flex-col space-y-2 w-full">
+            <div class="text-gray-400 text-xs font-medium uppercase">Chance de Crossover</div>
+            <mat-slider min="0" max="1" step="0.01" color='primary' [(ngModel)]="crossoverChance" [thumbLabel]='true'>
+            </mat-slider>
+        </div>
+
+        <div class="flex flex-col space-y-2 w-full">
+            <div class="text-gray-400 text-xs font-medium uppercase">Chance de Mutação</div>
+            <mat-slider min="0" max="1" step="0.01" color='primary' [(ngModel)]="mutationChance" [thumbLabel]='true'>
+            </mat-slider>
+        </div>
+
+        <div class="flex flex-col space-y-2 w-full">
+            <div class="text-gray-400 text-xs font-medium uppercase">Gerações</div>
+            <mat-slider min="1" max="200" step="1" color='primary' [(ngModel)]="generations" [thumbLabel]='true'>
+            </mat-slider>
+        </div>
+
+        <div class="flex flex-col space-y-2 w-full">
+            <div class="text-gray-400 text-xs font-medium uppercase">Elitismo</div>
+            <mat-checkbox color='primary' [(ngModel)]='elitism'>Utilizar Elitismo?</mat-checkbox>
+        </div>
+    </div>
+
+    <div class="flex flex-row items-center space-x-2">
+        <div class="flex flex-col space-y-2 w-full">
+            <div class="text-gray-400 text-xs font-medium uppercase">Tipo de Seleção</div>
+            <mat-form-field class="w-full">
+                <mat-select placeholder='Escolha um Tipo de Seleção...' [(ngModel)]='selection'>
+                    <mat-option [value]='"roulette"'>Roleta</mat-option>
+                    <mat-option [value]='"tournament"'>Torneio</mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+        <div class="flex flex-col space-y-2 w-full">
+            <div class="text-gray-400 text-xs font-medium uppercase">Tipo de Problema</div>
+            <mat-form-field class="w-full">
+                <mat-select placeholder='Escolha um problema...' [(ngModel)]='chosenProblem'
+                    (selectionChange)='clearDisplays()'>
+                    <mat-select-trigger>{{ chosenProblem && chosenProblem.title }}</mat-select-trigger>
+                    <mat-option *ngFor='let problem of problems' [value]='problem'>{{ problem.title }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+        <div class="w-48">
+            <button mat-raised-button class="w-full" color="primary" (click)='generate()'
+                [disabled]='!chosenProblem || loading'>
+                Gerar
+            </button>
+        </div>
+    </div>
+
+    <mat-spinner *ngIf='loading' [diameter]="40"></mat-spinner>
+
+    <apx-chart [series]="chartOptions.series" [chart]="chartOptions.chart" [xaxis]="chartOptions.xaxis"
+        [yaxis]="chartOptions.yaxis" [title]="chartOptions.title" [dataLabels]="chartOptions.dataLabels" #chart>
+    </apx-chart>
+
+    <div class="flex flex-row items-center justify-around w-full py-4" *ngIf='bestBoard && worstBoard'>
+        <!-- BOARD 1 -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="text-gray-400 text-xs font-medium uppercase">Melhor Individuo</div>
+            <div class="flex flex-col">
+                <div class="flex flex-row" *ngFor='let linha of bestBoard; let i = index;'>
+                    <div class="flex w-8 h-8" [ngClass]="(i + j) % 2 != 0 ? 'bg-gray-700' : ''"
+                        *ngFor='let celula of linha; let j = index;'>
+                        <img src="assets/queen.svg" *ngIf='celula == 1'>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOARD 2 -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="text-gray-400 text-xs font-medium uppercase">Pior Individuo</div>
+            <div class="flex flex-col">
+                <div class="flex flex-row" *ngFor='let linha of worstBoard; let i = index;'>
+                    <div class="flex w-8 h-8" [ngClass]="(i + j) % 2 != 0 ? 'bg-gray-700' : ''"
+                        *ngFor='let celula of linha; let j = index;'>
+                        <img src="assets/queen.svg" *ngIf='celula == 1'>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-row items-center justify-around w-full py-4" *ngIf='bestFactory && worstFactory'>
+        <!-- FACTORY 1 -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="text-gray-400 text-xs font-medium uppercase">Melhor Individuo</div>
+            <div class="flex flex-col">
+                <div class="text-primary">STD: {{ bestFactory[0] }}</div>
+                <div class="text-primary">LUX: {{ bestFactory[1] * 2 }}</div>
+                <div class="text-primary">R$ {{ 30 * bestFactory[0] + 40 * bestFactory[1] }},00</div>
+            </div>
+        </div>
+
+        <!-- FACTORY 2 -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="text-gray-400 text-xs font-medium uppercase">Pior Individuo</div>
+            <div class="flex flex-col">
+                <div class="text-primary">STD: {{ worstFactory[0] }}</div>
+                <div class="text-primary">LUX: {{ worstFactory[1] * 2 }}</div>
+                <div class="text-primary">R$ {{ 30 * worstFactory[0] + 40 * worstFactory[1] }},00</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-row items-center justify-around w-full py-4" *ngIf='bestValuedBoard && worstValuedBoard'>
+        <!-- BOARD 1 -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="text-gray-400 text-xs font-medium uppercase">Melhor Individuo</div>
+            <div class="flex flex-col">
+                <div class="flex flex-row" *ngFor='let linha of bestValuedBoard.board; let i = index;'>
+                    <div class="flex w-10 h-10 relative" [ngClass]="(i + j) % 2 != 0 ? 'bg-gray-700' : ''"
+                        *ngFor='let celula of linha; let j = index;'>
+                        <img src="assets/queen.svg" *ngIf='celula.queen == 1'>
+                        <span [ngClass]="(i + j) % 2 == 0 ? 'text-gray-700' : 'text-white'"
+                            class="text-xs absolute top-0 right-0">{{ celula.value.toFixed(2) }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <div class="text-primary">Colisões: {{ bestValuedBoard.clashes }}</div>
+                <div class="text-primary">Valor: {{ bestValuedBoard.value.toFixed(2) }}</div>
+            </div>
+        </div>
+
+        <!-- BOARD 2 -->
+        <div class="flex flex-col items-center space-y-1">
+            <div class="text-gray-400 text-xs font-medium uppercase">Pior Individuo</div>
+            <div class="flex flex-col">
+                <div class="flex flex-row" *ngFor='let linha of worstValuedBoard.board; let i = index;'>
+                    <div class="flex w-10 h-10 relative" [ngClass]="(i + j) % 2 != 0 ? 'bg-gray-700' : ''"
+                        *ngFor='let celula of linha; let j = index;'>
+                        <img src="assets/queen.svg" *ngIf='celula.queen == 1'>
+                        <span [ngClass]="(i + j) % 2 == 0 ? 'text-gray-700' : 'text-white'"
+                            class="text-xs absolute top-0 right-0">{{ celula.value.toFixed(2) }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <div class="text-primary">Colisões: {{ worstValuedBoard.clashes }}</div>
+                <div class="text-primary">Valor: {{ worstValuedBoard.value.toFixed(2) }}</div>
+            </div>
+        </div>
+    </div>
+</div>
